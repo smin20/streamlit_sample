@@ -1,55 +1,116 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
 import time
-import random
-from datetime import datetime
+import matplotlib.pyplot as plt
 
 # Set the title of the app
-st.title("Real-time Information Dashboard Without APIs")
+st.title("Streamlit Feature Showcase")
 
-# Display current system time
-st.header("Current Time")
-st.write("The current time is:")
-current_time = st.empty()  # This creates a placeholder for the time
-while True:
-    current_time.text(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    time.sleep(1)  # Update the time every second
-    st.experimental_rerun()
-
-# Simulated Stock Price Section
-st.header("Simulated Stock Price")
-st.write("This is a simulated stock price for illustration.")
-
-# Initialize with random stock price
-stock_price = st.empty()  # Create a placeholder for stock price
-initial_price = random.uniform(100, 200)
-while True:
-    price_change = random.uniform(-5, 5)  # Random change in stock price
-    initial_price += price_change
-    stock_price.text(f"Simulated Stock Price: ${initial_price:.2f}")
-    time.sleep(5)  # Update every 5 seconds
-    st.experimental_rerun()
-
-# Random Number Generator
-st.header("Random Number Generator")
-st.write("Below is a randomly generated number:")
-random_number_display = st.empty()
-
-# Button to generate a random number
-if st.button('Generate Random Number'):
-    random_number = random.randint(1, 100)
-    random_number_display.write(f"Random Number: {random_number}")
-
-# User Input Section
+# Text Input Example
 st.header("User Input Section")
-user_input = st.text_input("Enter any text to display below:")
-if user_input:
-    st.write(f"You entered: {user_input}")
+name = st.text_input("What's your name?", "Guest")
+st.write(f"Hello, {name}! Welcome to the Streamlit app.")
 
-# Countdown Timer Example
-st.header("Countdown Timer")
-seconds = st.number_input("Enter number of seconds for the countdown:", min_value=1, max_value=60, value=10)
-if st.button("Start Countdown"):
-    for i in range(seconds, 0, -1):
-        st.write(f"Countdown: {i} seconds remaining")
-        time.sleep(1)
-    st.write("Time's up!")
+# Slider Example
+st.header("Slider Example")
+age = st.slider("Select your age", min_value=0, max_value=100, value=25)
+st.write(f"Your age is: {age}")
+
+# Button Example
+st.header("Button Example")
+if st.button("Click Me!"):
+    st.write("You clicked the button!")
+
+# Checkbox Example
+st.header("Checkbox Example")
+agree = st.checkbox("I agree to the terms and conditions")
+if agree:
+    st.write("Thank you for agreeing!")
+
+# Selectbox Example
+st.header("Selectbox Example")
+option = st.selectbox("Choose a fruit:", ["Apple", "Banana", "Cherry"])
+st.write(f"You selected: {option}")
+
+# Radio Button Example
+st.header("Radio Button Example")
+radio_option = st.radio("Select a color:", ["Red", "Green", "Blue"])
+st.write(f"You chose: {radio_option}")
+
+# Sidebar Example
+st.sidebar.header("Sidebar Example")
+sidebar_option = st.sidebar.selectbox("Select a number:", [1, 2, 3, 4, 5])
+st.sidebar.write(f"You chose the number: {sidebar_option}")
+
+# DataFrame Example
+st.header("DataFrame Example")
+data = pd.DataFrame(np.random.randn(10, 5), columns=["A", "B", "C", "D", "E"])
+st.dataframe(data)  # Display the dataframe
+
+# Line Chart Example
+st.header("Line Chart Example")
+chart_data = pd.DataFrame(np.random.randn(20, 3), columns=["A", "B", "C"])
+st.line_chart(chart_data)
+
+# Matplotlib Chart Example
+st.header("Matplotlib Chart Example")
+fig, ax = plt.subplots()
+ax.plot([1, 2, 3, 4], [10, 20, 15, 25])
+st.pyplot(fig)
+
+# File Upload Example
+st.header("File Upload Example")
+uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
+    st.write(df)
+
+# Progress Bar Example
+st.header("Progress Bar Example")
+progress_bar = st.progress(0)
+for i in range(100):
+    time.sleep(0.05)
+    progress_bar.progress(i + 1)
+
+# Expander Example
+st.header("Expander Example")
+with st.expander("Click to expand for more info"):
+    st.write("This is inside the expander.")
+
+# Columns Example
+st.header("Columns Example")
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.write("This is column 1")
+with col2:
+    st.write("This is column 2")
+with col3:
+    st.write("This is column 3")
+
+# Multiselect Example
+st.header("Multiselect Example")
+multiselect_option = st.multiselect(
+    "Choose multiple options:", ["Option 1", "Option 2", "Option 3", "Option 4"]
+)
+st.write(f"You selected: {multiselect_option}")
+
+# Text Area Example
+st.header("Text Area Example")
+text_area = st.text_area("Type your message here")
+st.write(f"Your message: {text_area}")
+
+# Number Input Example
+st.header("Number Input Example")
+number = st.number_input("Input a number", min_value=0, max_value=100, value=50)
+st.write(f"The number you entered is: {number}")
+
+# Date Input Example
+st.header("Date Input Example")
+date = st.date_input("Pick a date")
+st.write(f"You selected: {date}")
+
+# Time Input Example
+st.header("Time Input Example")
+time_input = st.time_input("Pick a time")
+st.write(f"You selected: {time_input}")
