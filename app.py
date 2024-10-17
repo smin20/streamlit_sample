@@ -1,56 +1,55 @@
 import streamlit as st
+import time
+import random
+from datetime import datetime
 
-# Title and Header examples
-st.title("Welcome to My Stock Analysis App")
-st.header("Stock Data Overview")
-st.subheader("Real-time Stock Updates")
+# Set the title of the app
+st.title("Real-time Information Dashboard Without APIs")
 
-# Markdown examples with various text formatting
-st.markdown("# This is a Heading in Markdown")
-st.markdown("## This is a Subheading in Markdown")
-st.markdown("### Smaller Subheading Example")
-# st.markdown("""
-# **Bold Text Example**
+# Display current system time
+st.header("Current Time")
+st.write("The current time is:")
+current_time = st.empty()  # This creates a placeholder for the time
+while True:
+    current_time.text(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    time.sleep(1)  # Update the time every second
+    st.experimental_rerun()
 
-# *Italic Text Example*
+# Simulated Stock Price Section
+st.header("Simulated Stock Price")
+st.write("This is a simulated stock price for illustration.")
 
-# ~~Strikethrough Example~~
+# Initialize with random stock price
+stock_price = st.empty()  # Create a placeholder for stock price
+initial_price = random.uniform(100, 200)
+while True:
+    price_change = random.uniform(-5, 5)  # Random change in stock price
+    initial_price += price_change
+    stock_price.text(f"Simulated Stock Price: ${initial_price:.2f}")
+    time.sleep(5)  # Update every 5 seconds
+    st.experimental_rerun()
 
-# `Inline Code Example`
+# Random Number Generator
+st.header("Random Number Generator")
+st.write("Below is a randomly generated number:")
+random_number_display = st.empty()
 
-# > Blockquote Example
-# """)
+# Button to generate a random number
+if st.button('Generate Random Number'):
+    random_number = random.randint(1, 100)
+    random_number_display.write(f"Random Number: {random_number}")
 
-# Creating links and images with Markdown
-st.markdown("[Streamlit Documentation](https://docs.streamlit.io/)")
-# st.markdown("![Sample Image](https://via.placeholder.com/150)")
+# User Input Section
+st.header("User Input Section")
+user_input = st.text_input("Enter any text to display below:")
+if user_input:
+    st.write(f"You entered: {user_input}")
 
-# Lists in Markdown
-st.markdown("""
-- Bullet list item 1
-- Bullet list item 2
-  - Sub-bullet item 1
-  - Sub-bullet item 2
-""")
-
-st.markdown("""
-1. Numbered list item 1
-2. Numbered list item 2
-   1. Sub-item 1
-   2. Sub-item 2
-""")
-
-# Custom HTML in Markdown
-st.markdown("""
-<div style='background-color:lightblue; padding:10px; border-radius:5px'>
-    This is a **custom block** with HTML and inline style.
-</div>
-""", unsafe_allow_html=True)
-
-# # Highlighting code with Markdown
-# st.markdown("""
-# ```python
-# # This is a code block in Python
-# def my_function():
-#     return "Hello, Streamlit!")
-#     """
+# Countdown Timer Example
+st.header("Countdown Timer")
+seconds = st.number_input("Enter number of seconds for the countdown:", min_value=1, max_value=60, value=10)
+if st.button("Start Countdown"):
+    for i in range(seconds, 0, -1):
+        st.write(f"Countdown: {i} seconds remaining")
+        time.sleep(1)
+    st.write("Time's up!")
