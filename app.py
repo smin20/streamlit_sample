@@ -1,42 +1,38 @@
 import streamlit as st
 import datetime 
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
+import mplfinance as mpf
 import numpy as np
 import pandas as pd
 from pykrx import stock
-
+# 한글 깨짐 방지 설정
+plt.rcParams['font.family'] = 'Malgun Gothic'
+plt.rcParams['axes.unicode_minus'] = False
 # 페이지 설정을 넓은 레이아웃으로 설정
 st.set_page_config(layout="wide")
-
 # Streamlit 앱 제목
 st.title('매직스플릿 전략 최적화')
-
 # 사용자 입력을 위한 사이드바 설정
 st.sidebar.header('기초 설정')
-
 # 변수 초기화 부분을 Streamlit 위젯으로 변경
 initial_investment = st.sidebar.number_input('총 투자금액', value=5000000, step=100000)
 unit_investment = st.sidebar.number_input('1차수당 금액', value=500000, step=50000)
 max_buy_times = st.sidebar.number_input('최대 매수 횟수', value=10, min_value=1, step=1)
 target_ticker = st.sidebar.text_input('종목 코드', value='161390')
-
 # 매수 갭 %와 매도 %의 범위 설정 (고정 값으로 설정)
 buy_next_percent_start = 5.00
 buy_next_percent_end = 10.00
 buy_next_percent_step = 1.0
-
 sell_percent_start = 3.00
 sell_percent_end = 5.00
 sell_percent_step = 0.5
-
 # 날짜 범위 선택
 st.sidebar.header('날짜 범위 설정')
 start_date_input = st.sidebar.date_input('시작 날짜', datetime.datetime.today() - datetime.timedelta(days=180))
 end_date_input = st.sidebar.date_input('종료 날짜', datetime.datetime.today())
-
 start_date = start_date_input.strftime('%Y%m%d')
 end_date = end_date_input.strftime('%Y%m%d')
-
 # 백테스트 실행 버튼
 if st.sidebar.button('백테스트 실행'):
     # 데이터 가져오기
@@ -170,7 +166,7 @@ if st.sidebar.button('백테스트 실행'):
                                 
                                 if buy_count == 0:
                                     waiting_for_initial_price = True
-                
+            
             total_value = cash + holdings * close
             total_return = (total_value - initial_investment) / initial_investment * 100
             
@@ -185,13 +181,11 @@ if st.sidebar.button('백테스트 실행'):
     
     # 결과를 데이터프레임으로 변환
     results_df = pd.DataFrame(results)
-
     # 피벗 테이블 생성    
     pivot_table = results_df.pivot(index='매수 갭 %', columns='매도 %', values='총 수익률 (%)').astype(float)
     pivot_table = pivot_table.round(2)
     # 컬럼 제목 변경
     pivot_table.columns = ['매도 {}%'.format(col) for col in pivot_table.columns]
-
     st.subheader('백테스팅 결과')
     st.dataframe(pivot_table.style.format("{:.2f}").background_gradient(cmap='RdYlGn', axis=None))
         
@@ -206,7 +200,7 @@ if st.sidebar.button('백테스트 실행'):
     # 최적의 변수로 백테스팅 결과 시각화
     st.subheader('최적의 변수로 백테스팅 결과 시각화')
     
-    # 최적의 변수로 다시 백테스팅 실행
+    # 최적의 변수로 다시 백테스팅 실행 (매매 내역 및 포트폴리오 가치 기록)
     buy_next_percent = optimal_buy_next_percent
     sell_percent = optimal_sell_percent
     buy_next_percent_decimal = buy_next_percent / 100
@@ -304,48 +298,52 @@ if st.sidebar.button('백테스트 실행'):
         portfolio_value.append(total_value)
         dates.append(date)
     
-    # 매수 및 매도 내역에서 매수/매도 차수 추출
-    buy_dates = [trade['Date'] for trade in trade_history if trade['Type'] == 'Buy']
-    buy_prices_plot = [trade['Price'] for trade in trade_history if trade['Type'] == 'Buy']
-    buy_counts = [trade['Buy_Count'] for trade in trade_history if trade['Type'] == 'Buy']
+    # -------------------------------
+    # [변경 부분] 캔들차트로 매매 시점 시각화
+    # -------------------------------
+    # mplfinance에서 사용하기 위해 df의 컬럼명을 영어로 변경합니다.
+    df_candle = df.rename(columns={'시가': 'Open', '고가': 'High', '저가': 'Low', '종가': 'Close'})
     
-    sell_dates = [trade['Date'] for trade in trade_history if trade['Type'] == 'Sell']
-    sell_prices_plot = [trade['Price'] for trade in trade_history if trade['Type'] == 'Sell']
-    sell_counts = [trade['Buy_Count'] for trade in trade_history if trade['Type'] == 'Sell']
+    # 매매 시점을 기록할 Series 생성 (인덱스는 df_candle의 날짜)
+    buy_signals = pd.Series(np.nan, index=df_candle.index)
+    sell_signals = pd.Series(np.nan, index=df_candle.index)
     
-    # 결과 시각화
-    fig, ax = plt.subplots(figsize=(12, 6))
+    # trade_history에 기록된 매수/매도 시점을 해당 날짜에 표시
+    for trade in trade_history:
+        if trade['Type'] == 'Buy':
+            # 동일 날짜에 여러 거래가 있을 수 있으므로, 처음 나온 값만 표시하거나 마지막 값으로 덮어씌울 수 있습니다.
+            buy_signals.loc[trade['Date']] = trade['Price']
+        elif trade['Type'] == 'Sell':
+            sell_signals.loc[trade['Date']] = trade['Price']
     
-    # 고가와 저가를 함께 그리기
-    ax.plot(df.index, df['고가'], label='고가', color='orange', alpha=0.6)
-    ax.plot(df.index, df['저가'], label='저가', color='purple', alpha=0.6)
+    # 매매 시점을 addplot으로 오버레이 (매수: 초록색 위쪽 삼각형, 매도: 빨간색 아래쪽 삼각형)
+    apds = [
+        mpf.make_addplot(buy_signals, type='scatter', markersize=100, marker='^', color='green'),
+        mpf.make_addplot(sell_signals, type='scatter', markersize=100, marker='v', color='red')
+    ]
     
-    # 종가를 함께 그리기
-    ax.plot(df.index, df['종가'], label='종가', color='blue')
+    # mplfinance에 사용할 스타일 생성 (기본 스타일 'yahoo'를 기반으로 하고, rc 설정에 한글 폰트를 지정)
+    my_style = mpf.make_mpf_style(
+        base_mpf_style='yahoo',
+        rc={'font.family': 'Malgun Gothic', 'axes.unicode_minus': False}
+    )    
+    # 캔들차트 그리기 (returnfig=True를 사용하면 fig, ax를 반환)
+    fig, ax = mpf.plot(df_candle, type='candle', style=my_style, addplot=apds, returnfig=True,
+                       title=f'{target_ticker} 매수 및 매도 시점 (최적화된 변수)', ylabel='가격 (원)')
     
-    # 매수 시점 표시
-    ax.scatter(buy_dates, buy_prices_plot, marker='^', color='green', label='매수', s=100)
-    
-    # 매수 차수 라벨 표시
-    for i, txt in enumerate(buy_counts):
-        ax.annotate(f'{int(txt)}', (buy_dates[i], buy_prices_plot[i]), textcoords="offset points", xytext=(0,10), ha='center')
-    
-    # 매도 시점 표시
-    ax.scatter(sell_dates, sell_prices_plot, marker='v', color='red', label='매도', s=100)
-    
-    # 매도 차수 라벨 표시
-    for i, txt in enumerate(sell_counts):
-        ax.annotate(f'{int(txt)}', (sell_dates[i], sell_prices_plot[i]), textcoords="offset points", xytext=(0,-15), ha='center')
-    
-    ax.set_title(f'{target_ticker} 매수 및 매도 시점 (최적화된 변수)')
-    ax.set_xlabel('날짜')
-    ax.set_ylabel('가격 (원)')
-    ax.legend()
-    ax.grid(True)
+    # 매매 내역에서 각 거래의 매수/매도 차수를 캔들차트에 텍스트로 표시 (선택사항)
+    for trade in trade_history:
+        if trade['Type'] == 'Buy':
+            ax[0].annotate(f"{int(trade['Buy_Count'])}", xy=(trade['Date'], trade['Price']),
+                           xytext=(0,10), textcoords='offset points', color='green', ha='center')
+        elif trade['Type'] == 'Sell':
+            ax[0].annotate(f"{int(trade['Buy_Count'])}", xy=(trade['Date'], trade['Price']),
+                           xytext=(0,-15), textcoords='offset points', color='red', ha='center')
     
     st.pyplot(fig)
+    # -------------------------------
     
-    # 포트폴리오 가치 변화 시각화
+    # 포트폴리오 가치 변화 시각화 (라인 차트)
     portfolio_series = pd.Series(portfolio_value, index=dates)
     fig2, ax2 = plt.subplots(figsize=(12, 6))
     ax2.plot(portfolio_series.index, portfolio_series.values)
