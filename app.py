@@ -6,33 +6,43 @@ import mplfinance as mpf
 import numpy as np
 import pandas as pd
 from pykrx import stock
-# 한글 깨짐 방지 설정
+
+# 한글 깨짐 방지 설정 (로컬에서는 한글 사용하지만, 여기서는 plt 차트에 들어가는 텍스트를 영어로 변경)
 plt.rcParams['font.family'] = 'Malgun Gothic'
 plt.rcParams['axes.unicode_minus'] = False
+
 # 페이지 설정을 넓은 레이아웃으로 설정
 st.set_page_config(layout="wide")
+
 # Streamlit 앱 제목
 st.title('매직스플릿 전략 최적화')
+
 # 사용자 입력을 위한 사이드바 설정
 st.sidebar.header('기초 설정')
+
 # 변수 초기화 부분을 Streamlit 위젯으로 변경
 initial_investment = st.sidebar.number_input('총 투자금액', value=5000000, step=100000)
 unit_investment = st.sidebar.number_input('1차수당 금액', value=500000, step=50000)
 max_buy_times = st.sidebar.number_input('최대 매수 횟수', value=10, min_value=1, step=1)
 target_ticker = st.sidebar.text_input('종목 코드', value='161390')
+
 # 매수 갭 %와 매도 %의 범위 설정 (고정 값으로 설정)
 buy_next_percent_start = 5.00
 buy_next_percent_end = 10.00
 buy_next_percent_step = 1.0
+
 sell_percent_start = 3.00
 sell_percent_end = 5.00
 sell_percent_step = 0.5
+
 # 날짜 범위 선택
 st.sidebar.header('날짜 범위 설정')
 start_date_input = st.sidebar.date_input('시작 날짜', datetime.datetime.today() - datetime.timedelta(days=180))
 end_date_input = st.sidebar.date_input('종료 날짜', datetime.datetime.today())
+
 start_date = start_date_input.strftime('%Y%m%d')
 end_date = end_date_input.strftime('%Y%m%d')
+
 # 백테스트 실행 버튼
 if st.sidebar.button('백테스트 실행'):
     # 데이터 가져오기
@@ -327,9 +337,18 @@ if st.sidebar.button('백테스트 실행'):
         base_mpf_style='yahoo',
         rc={'font.family': 'Malgun Gothic', 'axes.unicode_minus': False}
     )    
+    
     # 캔들차트 그리기 (returnfig=True를 사용하면 fig, ax를 반환)
-    fig, ax = mpf.plot(df_candle, type='candle', style=my_style, addplot=apds, returnfig=True,
-                       title=f'{target_ticker} 매수 및 매도 시점 (최적화된 변수)', ylabel='가격 (원)')
+    # → 제목과 y축 라벨을 영어로 변경하였습니다.
+    fig, ax = mpf.plot(
+        df_candle,
+        type='candle',
+        style=my_style,
+        addplot=apds,
+        returnfig=True,
+        title=f'{target_ticker} Buy and Sell Signals (Optimized Parameters)',
+        ylabel='Price (KRW)'
+    )
     
     # 매매 내역에서 각 거래의 매수/매도 차수를 캔들차트에 텍스트로 표시 (선택사항)
     for trade in trade_history:
@@ -347,9 +366,9 @@ if st.sidebar.button('백테스트 실행'):
     portfolio_series = pd.Series(portfolio_value, index=dates)
     fig2, ax2 = plt.subplots(figsize=(12, 6))
     ax2.plot(portfolio_series.index, portfolio_series.values)
-    ax2.set_title('포트폴리오 가치 변화 (최적화된 변수)')
-    ax2.set_xlabel('날짜')
-    ax2.set_ylabel('포트폴리오 가치 (원)')
+    ax2.set_title('Portfolio Value Change (Optimized Parameters)')
+    ax2.set_xlabel('Date')
+    ax2.set_ylabel('Portfolio Value (KRW)')
     ax2.grid(True)
     
     st.pyplot(fig2)
@@ -359,4 +378,4 @@ if st.sidebar.button('백테스트 실행'):
     trade_history_df = pd.DataFrame(trade_history)
     trade_history_df.set_index('Date', inplace=True)
     st.dataframe(trade_history_df)
-    st.write("메일문의 : jsm02115@naver.com")
+    st.write("For inquiries: jsm02115@naver.com")
