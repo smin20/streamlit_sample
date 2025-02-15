@@ -68,7 +68,7 @@ if search_query:
         )
         # selectbox에 정렬된 결과 표시 ("티커 - 종목명" 형식)
         selected = st.sidebar.selectbox(
-            "📋 검색 결과 (시가총액 기준 정렬)",
+            "📋 검색 결과",
             sorted_filtered_tickers,
             format_func=lambda x: f"{x[0]} - {x[1]}"
         )
@@ -410,7 +410,7 @@ if st.sidebar.button('🚀 백테스트 실행'):
         style=my_style,
         addplot=apds,
         returnfig=True,
-        title=f'{target_ticker} ({stock.get_market_ticker_name(target_ticker)}) Buy and Sell Signals (Optimized Parameters)',
+        title=f'{target_ticker} Buy and Sell Signals (Optimized Parameters)',
         ylabel='Price (KRW)'
     )
     
