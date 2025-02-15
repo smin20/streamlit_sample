@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore", message="findfont: Font family 'Malgun Gothic' not found.")
+
 import streamlit as st
 import datetime 
 import matplotlib.pyplot as plt
@@ -7,7 +10,27 @@ import pandas as pd
 from pykrx import stock
 import sqlite3
 import json
+import logging
+import sys
 
+# 별도의 로거 인스턴스 생성
+logger = logging.getLogger("my_app_logger")
+logger.setLevel(logging.INFO)
+
+# 만약 핸들러가 없으면 추가합니다.
+if not logger.handlers:
+    handler = logging.StreamHandler(sys.stderr)  # stderr로 출력되도록 설정
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+
+# 로그 설정: 기본 형식을 지정하고, INFO 레벨 이상의 로그를 출력하도록 합니다.
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+)
 # 페이지 설정 (넓은 레이아웃)
 st.set_page_config(layout="wide")
 
@@ -135,10 +158,15 @@ end_date_input = st.sidebar.date_input('종료 날짜', datetime.datetime.today(
 start_date = start_date_input.strftime('%Y%m%d')
 end_date = end_date_input.strftime('%Y%m%d')
 
-# -------------------------------
-# 백테스트 실행 버튼 (아이콘 추가)
-# -------------------------------
 if st.sidebar.button('🚀 백테스트 실행'):
+    log_line = f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - 백테스트 실행됨"
+    if target_ticker:
+        log_line += f" (종목: {target_ticker} - {stock.get_market_ticker_name(target_ticker)})"
+    else:
+        log_line += " (종목 미선택)"
+    
+    logger.info(log_line)  # sys.stderr로 출력되어 Streamlit Cloud 로그에 남게 됩니다.
+    
     if not target_ticker:
         st.error("❗ 종목/ETF를 선택하세요.")
         st.stop()
@@ -441,29 +469,43 @@ if st.sidebar.button('🚀 백테스트 실행'):
         mpf.make_addplot(sell_signals, type='scatter', markersize=100, marker='v', color='red')
     ]
     
-    my_style = mpf.make_mpf_style(
-        base_mpf_style='yahoo',
-        rc={'font.family': 'Malgun Gothic', 'axes.unicode_minus': False}
-    )    
+
     
     fig, ax = mpf.plot(
         df_candle,
         type='candle',
-        style=my_style,
+        style='yahoo',
         addplot=apds,
         returnfig=True,
-        title=f'{target_ticker} ({ticker_name}) Buy and Sell Signals (Optimized Parameters)',
+        title=f'{target_ticker} Buy and Sell Signals (Optimized Parameters)',
         ylabel='Price (KRW)'
     )
-    
+        
     for trade in trade_history:
         if trade['Type'] == 'Buy':
-            ax[0].annotate(f"{int(trade['Buy_Count'])}", xy=(trade['Date'], trade['Price']),
-                           xytext=(0,10), textcoords='offset points', color='green', ha='center')
+            ax[0].annotate(
+                f"{int(trade['Buy_Count'])}차 매수",
+                xy=(trade['Date'], trade['Price']),
+                xytext=(0,10),
+                textcoords='offset points',
+                color='green',
+                ha='center',
+                fontsize=8,
+                clip_on=False,
+                zorder=10
+            )
         elif trade['Type'] == 'Sell':
-            ax[0].annotate(f"{int(trade['Buy_Count'])}", xy=(trade['Date'], trade['Price']),
-                           xytext=(0,-15), textcoords='offset points', color='red', ha='center')
-    
+            ax[0].annotate(
+                f"{int(trade['Buy_Count'])}차 매도",
+                xy=(trade['Date'], trade['Price']),
+                xytext=(0,-15),
+                textcoords='offset points',
+                color='red',
+                ha='center',
+                fontsize=8,
+                clip_on=False,
+                zorder=10
+            )
     st.pyplot(fig)
     
     # 포트폴리오 가치 변화 시각화
@@ -483,3 +525,5 @@ if st.sidebar.button('🚀 백테스트 실행'):
     trade_history_df.set_index('Date', inplace=True)
     st.dataframe(trade_history_df)
     st.write("For inquiries: jsm02115@naver.com")
+    
+    # st.success("✅ 백테스트 결과가 데이터베이스에 저장되었습니다!")
