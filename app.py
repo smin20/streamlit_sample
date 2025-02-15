@@ -10,7 +10,13 @@ import pandas as pd
 from pykrx import stock
 import sqlite3
 import json
+import logging
 
+# 로그 설정: 기본 형식을 지정하고, INFO 레벨 이상의 로그를 출력하도록 합니다.
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+)
 # 페이지 설정 (넓은 레이아웃)
 st.set_page_config(layout="wide")
 
@@ -102,13 +108,14 @@ start_date = start_date_input.strftime('%Y%m%d')
 end_date = end_date_input.strftime('%Y%m%d')
 
 if st.sidebar.button('🚀 백테스트 실행'):
-    # 로그 기록: 실행 시간과 선택된 종목 정보를 터미널에 출력합니다.
     log_line = f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - 백테스트 실행됨"
     if target_ticker:
         log_line += f" (종목: {target_ticker} - {stock.get_market_ticker_name(target_ticker)})"
     else:
         log_line += " (종목 미선택)"
-    print(log_line)
+    
+    # 로그 출력
+    logging.info(log_line)
     
     if not target_ticker:
         st.error("❗ 종목을 선택하세요.")
