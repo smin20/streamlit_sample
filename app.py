@@ -101,10 +101,15 @@ end_date_input = st.sidebar.date_input('종료 날짜', datetime.datetime.today(
 start_date = start_date_input.strftime('%Y%m%d')
 end_date = end_date_input.strftime('%Y%m%d')
 
-# -------------------------------
-# 백테스트 실행 버튼 (아이콘 추가)
-# -------------------------------
 if st.sidebar.button('🚀 백테스트 실행'):
+    # 로그 기록: 실행 시간과 선택된 종목 정보를 터미널에 출력합니다.
+    log_line = f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - 백테스트 실행됨"
+    if target_ticker:
+        log_line += f" (종목: {target_ticker} - {stock.get_market_ticker_name(target_ticker)})"
+    else:
+        log_line += " (종목 미선택)"
+    print(log_line)
+    
     if not target_ticker:
         st.error("❗ 종목을 선택하세요.")
         st.stop()
