@@ -435,18 +435,35 @@ if st.sidebar.button('🚀 백테스트 실행'):
         style='yahoo',
         addplot=apds,
         returnfig=True,
-        title=f'{target_ticker} () Buy and Sell Signals (Optimized Parameters)',
+        title=f'{target_ticker} Buy and Sell Signals (Optimized Parameters)',
         ylabel='Price (KRW)'
     )
-    
+        
     for trade in trade_history:
         if trade['Type'] == 'Buy':
-            ax[0].annotate(f"{int(trade['Buy_Count'])}", xy=(trade['Date'], trade['Price']),
-                           xytext=(0,10), textcoords='offset points', color='green', ha='center')
+            ax[0].annotate(
+                f"{int(trade['Buy_Count'])}차 매수",
+                xy=(trade['Date'], trade['Price']),
+                xytext=(0,10),
+                textcoords='offset points',
+                color='green',
+                ha='center',
+                fontsize=8,
+                clip_on=False,
+                zorder=10
+            )
         elif trade['Type'] == 'Sell':
-            ax[0].annotate(f"{int(trade['Buy_Count'])}", xy=(trade['Date'], trade['Price']),
-                           xytext=(0,-15), textcoords='offset points', color='red', ha='center')
-    
+            ax[0].annotate(
+                f"{int(trade['Buy_Count'])}차 매도",
+                xy=(trade['Date'], trade['Price']),
+                xytext=(0,-15),
+                textcoords='offset points',
+                color='red',
+                ha='center',
+                fontsize=8,
+                clip_on=False,
+                zorder=10
+            )
     st.pyplot(fig)
     
     # 포트폴리오 가치 변화 시각화
@@ -467,52 +484,4 @@ if st.sidebar.button('🚀 백테스트 실행'):
     st.dataframe(trade_history_df)
     st.write("For inquiries: jsm02115@naver.com")
     
-    # ========================================================
-    # DB 저장: 백테스트 실행 시 사용한 값 및 결과를 하나의 .db 파일에 저장
-    # ========================================================
-    conn = sqlite3.connect("backtest_results.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS backtest_runs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            run_timestamp TEXT,
-            target_ticker TEXT,
-            ticker_name TEXT,
-            initial_investment REAL,
-            unit_investment REAL,
-            max_buy_times INTEGER,
-            start_date TEXT,
-            end_date TEXT,
-            buy_next_percent_start REAL,
-            buy_next_percent_end REAL,
-            buy_next_percent_step REAL,
-            sell_percent_start REAL,
-            sell_percent_end REAL,
-            sell_percent_step REAL,
-            optimal_buy_next_percent REAL,
-            optimal_sell_percent REAL,
-            max_return REAL
-        )
-    """)
-    conn.commit()
-    
-    run_timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    ticker_name = stock.get_market_ticker_name(target_ticker)
-    
-    cursor.execute("""
-        INSERT INTO backtest_runs (
-            run_timestamp, target_ticker, ticker_name, initial_investment, unit_investment, max_buy_times,
-            start_date, end_date, buy_next_percent_start, buy_next_percent_end, buy_next_percent_step,
-            sell_percent_start, sell_percent_end, sell_percent_step, optimal_buy_next_percent,
-            optimal_sell_percent, max_return
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        run_timestamp, target_ticker, ticker_name, initial_investment, unit_investment, max_buy_times,
-        start_date_input.strftime('%Y-%m-%d'), end_date_input.strftime('%Y-%m-%d'),
-        buy_next_percent_start, buy_next_percent_end, buy_next_percent_step,
-        sell_percent_start, sell_percent_end, sell_percent_step,
-        optimal_buy_next_percent, optimal_sell_percent, max_return 
-    ))
-    conn.commit()
-    conn.close()
     # st.success("✅ 백테스트 결과가 데이터베이스에 저장되었습니다!")
