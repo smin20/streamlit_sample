@@ -469,11 +469,16 @@ if st.sidebar.button('🚀 백테스트 실행'):
         elif trade['Type'] == 'Sell':
             sell_signals.loc[trade['Date']] = trade['Price']
     
-    apds = [
-        mpf.make_addplot(buy_signals, type='scatter', markersize=100, marker='^', color='green'),
-        mpf.make_addplot(sell_signals, type='scatter', markersize=100, marker='v', color='red')
-    ]
-    
+    # apds = [
+    #     mpf.make_addplot(buy_signals, type='scatter', markersize=100, marker='^', color='green'),
+    #     mpf.make_addplot(sell_signals, type='scatter', markersize=100, marker='v', color='red')
+    # ]
+    apds = []
+    if not buy_signals.dropna().empty:
+        apds.append(mpf.make_addplot(buy_signals, type='scatter', markersize=100, marker='^', color='green'))
+    if not sell_signals.dropna().empty:
+        apds.append(mpf.make_addplot(sell_signals, type='scatter', markersize=100, marker='v', color='red'))
+
 
     
     fig, ax = mpf.plot(
