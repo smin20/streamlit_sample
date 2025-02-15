@@ -230,7 +230,7 @@ with tabs[1]:
     recent_searches = fetch_recent_searches(limit=20)  # 중복을 고려하여 더 많은 데이터를 요청할 수 있음
     if recent_searches:
         df_recent = pd.DataFrame(recent_searches)
-        df_recent = df_recent.drop_duplicates().head(5)  # 중복 항목 제거 후 상위 5개만 보여줌
+        df_recent = df_recent.drop_duplicates().head(20)  # 중복 항목 제거 후 상위 5개만 보여줌
         st.dataframe(df_recent)
     else:
         st.write("최근 검색 내역이 없습니다.")
