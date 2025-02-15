@@ -410,7 +410,7 @@ if st.sidebar.button('🚀 백테스트 실행'):
         style='yahoo',
         addplot=apds,
         returnfig=True,
-        title=f'{target_ticker} Buy and Sell Signals (Optimized Parameters)',
+        title=f'{target_ticker} () Buy and Sell Signals (Optimized Parameters)',
         ylabel='Price (KRW)'
     )
     
