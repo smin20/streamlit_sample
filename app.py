@@ -11,14 +11,16 @@ import json
 # 페이지 설정 (넓은 레이아웃)
 st.set_page_config(layout="wide")
 
-# 앱 제목 (아이콘 추가)
 st.info('🪄 매직스플릿 결과 백테스팅 페이지 입니다. 종목 선택 후 🚀 백테스트 실행 버튼 클릭하세요.')
 
 # ---------------------------------------
-# 사이드바: 종목 검색 및 선택 (아이콘 추가)
+# 사이드바: 투자 유형 선택 및 종목 검색 (아이콘 추가)
 # ---------------------------------------
-st.sidebar.header("🔍 종목 검색")
-search_query = st.sidebar.text_input("🔎 종목 이름 입력 (예: 삼성)", key="search_query")
+st.sidebar.header("🔍 투자 유형 및 종목 검색")
+# 투자 유형 선택: 주식 또는 ETF
+instrument_type = st.sidebar.radio("📊 투자 유형 선택", ["주식", "ETF"])
+
+search_query = st.sidebar.text_input("🔎 종목/ETF 이름 혹은 Code\n\n(ex. 삼성/KODEX/005930)", key="search_query")
 
 @st.cache_data
 def load_ticker_info():
@@ -38,47 +40,82 @@ def load_ticker_info():
             ticker_dict[t] = "Unknown"
     return ticker_dict
 
+@st.cache_data
+def load_etf_ticker_info():
+    # ETF 전체 티커와 이름 정보를 가져옵니다.
+    tickers = stock.get_etf_ticker_list()
+    ticker_dict = {}
+    for t in tickers:
+        try:
+            ticker_dict[t] = stock.get_etf_ticker_name(t)
+        except Exception:
+            ticker_dict[t] = "Unknown"
+    return ticker_dict
+
 @st.cache_data(show_spinner=False)
 def get_market_cap(ticker, date_str):
     """
     지정한 날짜(date_str: 'YYYYMMDD') 기준으로 해당 종목의 시가총액을 반환합니다.
     조회에 실패하면 0을 반환합니다.
+    (ETF에는 적용되지 않습니다.)
     """
     try:
         df_cap = stock.get_market_cap_by_date(date_str, date_str, ticker)
         if df_cap.empty:
             return 0
-        # df_cap의 '시가총액' 컬럼 값 반환 (필요에 따라 데이터 전처리 필요)
         return df_cap['시가총액'].iloc[0]
     except Exception:
         return 0
 
 if search_query:
-    ticker_info = load_ticker_info()
-    # 검색어가 종목명에 포함된 티커들 필터링 (대소문자 구분 없이)
-    filtered_tickers = {code: name for code, name in ticker_info.items() if search_query in name}
-    if filtered_tickers:
-        # 오늘 날짜 기준으로 시가총액 조회 (문자열 'YYYYMMDD' 형식)
-        today_str = datetime.datetime.today().strftime("%Y%m%d")
-        # (티커, 종목명) 튜플 리스트를 시가총액 기준 내림차순으로 정렬
-        sorted_filtered_tickers = sorted(
-            filtered_tickers.items(),
-            key=lambda x: get_market_cap(x[0], today_str),
-            reverse=True
-        )
-        # selectbox에 정렬된 결과 표시 ("티커 - 종목명" 형식)
-        selected = st.sidebar.selectbox(
-            "📋 검색 결과",
-            sorted_filtered_tickers,
-            format_func=lambda x: f"{x[0]} - {x[1]}"
-        )
-        target_ticker = selected[0]
-        st.sidebar.write(f"✅ 선택된 종목: **{selected[0]} ({selected[1]})**")
-    else:
-        st.sidebar.write("❌ 검색 결과가 없습니다.")
-        target_ticker = None
+    if instrument_type == "주식":
+        ticker_info = load_ticker_info()
+        # 검색어가 종목명에 포함된 티커 필터링 (대소문자 구분 없이)
+        filtered_tickers = {
+            code: name 
+            for code, name in ticker_info.items() 
+            if search_query.lower() in name.lower() or search_query in code
+            }
+        if filtered_tickers:
+            # 오늘 날짜 기준 시가총액 조회 후 내림차순 정렬
+            today_str = datetime.datetime.today().strftime("%Y%m%d")
+            sorted_filtered_tickers = sorted(
+                filtered_tickers.items(),
+                key=lambda x: get_market_cap(x[0], today_str),
+                reverse=True
+            )
+            selected = st.sidebar.selectbox(
+                "📋 검색 결과",
+                sorted_filtered_tickers,
+                format_func=lambda x: f"{x[0]} - {x[1]}"
+            )
+            target_ticker = selected[0]
+            st.sidebar.write(f"✅ 선택된 종목: **{selected[0]} ({selected[1]})**")
+        else:
+            st.sidebar.write("❌ 검색 결과가 없습니다.")
+            target_ticker = None
+    else:  # ETF 선택 시
+        ticker_info = load_etf_ticker_info()
+        filtered_tickers = {
+            code: name 
+            for code, name in ticker_info.items() 
+            if search_query.lower() in name.lower() or search_query in code
+            }
+        if filtered_tickers:
+            # ETF는 시가총액 대신 티커 오름차순 정렬
+            sorted_filtered_tickers = sorted(filtered_tickers.items(), key=lambda x: x[0])
+            selected = st.sidebar.selectbox(
+                "📋 검색 결과",
+                sorted_filtered_tickers,
+                format_func=lambda x: f"{x[0]} - {x[1]}"
+            )
+            target_ticker = selected[0]
+            st.sidebar.write(f"✅ 선택된 ETF: **{selected[0]} ({selected[1]})**")
+        else:
+            st.sidebar.write("❌ 검색 결과가 없습니다.")
+            target_ticker = None
 else:
-    st.sidebar.write("ℹ️ 종목 검색어를 입력하세요.")
+    st.sidebar.write("ℹ️ 종목/ETF 검색어를 입력하세요.")
     target_ticker = None
 
 # ---------------------------------------
@@ -103,13 +140,19 @@ end_date = end_date_input.strftime('%Y%m%d')
 # -------------------------------
 if st.sidebar.button('🚀 백테스트 실행'):
     if not target_ticker:
-        st.error("❗ 종목을 선택하세요.")
+        st.error("❗ 종목/ETF를 선택하세요.")
         st.stop()
     
-    # 데이터 가져오기
+    # 데이터 가져오기 (주식/ETF 구분)
     try:
-        st.write(f'📈 종목 코드 {target_ticker} ({stock.get_market_ticker_name(target_ticker)}) 의 데이터를 {start_date_input}부터 {end_date_input}까지 가져옵니다.')
-        df = stock.get_market_ohlcv_by_date(start_date, end_date, target_ticker)
+        if instrument_type == "주식":
+            ticker_name = stock.get_market_ticker_name(target_ticker)
+            st.write(f'📈 종목 코드 {target_ticker} ({ticker_name}) 의 데이터를 {start_date_input}부터 {end_date_input}까지 가져옵니다.')
+            df = stock.get_market_ohlcv_by_date(start_date, end_date, target_ticker)
+        else:
+            ticker_name = stock.get_etf_ticker_name(target_ticker)
+            st.write(f'📈 ETF 코드 {target_ticker} ({ticker_name}) 의 데이터를 {start_date_input}부터 {end_date_input}까지 가져옵니다.')
+            df = stock.get_etf_ohlcv_by_date(start_date, end_date, target_ticker)
         df.index = pd.to_datetime(df.index)
         df.sort_index(inplace=True)
     except Exception as e:
@@ -139,11 +182,10 @@ if st.sidebar.button('🚀 백테스트 실행'):
     for buy_next_percent in np.arange(buy_next_percent_start, buy_next_percent_end + buy_next_percent_step, buy_next_percent_step):
         for sell_percent in np.arange(sell_percent_start, sell_percent_end + sell_percent_step, sell_percent_step):
             iteration += 1
-            # 퍼센트 값을 소수로 변환
             buy_next_percent_decimal = buy_next_percent / 100
             sell_percent_decimal = sell_percent / 100
             
-            holdings = 0  # 보유 주식 수 (정수)
+            holdings = 0  # 보유 주식 수
             cash = initial_investment
             
             # 수수료 및 세금 설정 (키움증권 기준)
@@ -151,10 +193,10 @@ if st.sidebar.button('🚀 백테스트 실행'):
             transaction_tax_rate = 0.0018   # 매도 시 거래세 0.18%
             
             # 변수 초기화
-            initial_buy_price = None          # 1차 매수 가격 저장
-            waiting_for_initial_price = False # 1차 매수 가격까지 하락 대기 상태
-            buy_count = 0                     # 현재 보유 중인 매수 차수
-            buy_levels = []                   # 보유 중인 매수 레벨별 가격 및 수량
+            initial_buy_price = None          
+            waiting_for_initial_price = False 
+            buy_count = 0                     
+            buy_levels = []                   
             
             # 매수 가능 주식 수 계산 함수
             def calculate_number_of_shares_to_buy(cash_available, unit_investment, price, commission_rate):
@@ -410,7 +452,7 @@ if st.sidebar.button('🚀 백테스트 실행'):
         style=my_style,
         addplot=apds,
         returnfig=True,
-        title=f'{target_ticker} () Buy and Sell Signals (Optimized Parameters)',
+        title=f'{target_ticker} ({ticker_name}) Buy and Sell Signals (Optimized Parameters)',
         ylabel='Price (KRW)'
     )
     
@@ -435,59 +477,9 @@ if st.sidebar.button('🚀 백테스트 실행'):
     
     st.pyplot(fig2)
     
-    # 매매 내역 표시 (아이콘 추가)
+    # 매매 내역 표시
     st.subheader('📜 매매 내역')
     trade_history_df = pd.DataFrame(trade_history)
     trade_history_df.set_index('Date', inplace=True)
     st.dataframe(trade_history_df)
     st.write("For inquiries: jsm02115@naver.com")
-    
-    # ========================================================
-    # DB 저장: 백테스트 실행 시 사용한 값 및 결과를 하나의 .db 파일에 저장
-    # ========================================================
-    conn = sqlite3.connect("backtest_results.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS backtest_runs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            run_timestamp TEXT,
-            target_ticker TEXT,
-            ticker_name TEXT,
-            initial_investment REAL,
-            unit_investment REAL,
-            max_buy_times INTEGER,
-            start_date TEXT,
-            end_date TEXT,
-            buy_next_percent_start REAL,
-            buy_next_percent_end REAL,
-            buy_next_percent_step REAL,
-            sell_percent_start REAL,
-            sell_percent_end REAL,
-            sell_percent_step REAL,
-            optimal_buy_next_percent REAL,
-            optimal_sell_percent REAL,
-            max_return REAL
-        )
-    """)
-    conn.commit()
-    
-    run_timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    ticker_name = stock.get_market_ticker_name(target_ticker)
-    
-    cursor.execute("""
-        INSERT INTO backtest_runs (
-            run_timestamp, target_ticker, ticker_name, initial_investment, unit_investment, max_buy_times,
-            start_date, end_date, buy_next_percent_start, buy_next_percent_end, buy_next_percent_step,
-            sell_percent_start, sell_percent_end, sell_percent_step, optimal_buy_next_percent,
-            optimal_sell_percent, max_return
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        run_timestamp, target_ticker, ticker_name, initial_investment, unit_investment, max_buy_times,
-        start_date_input.strftime('%Y-%m-%d'), end_date_input.strftime('%Y-%m-%d'),
-        buy_next_percent_start, buy_next_percent_end, buy_next_percent_step,
-        sell_percent_start, sell_percent_end, sell_percent_step,
-        optimal_buy_next_percent, optimal_sell_percent, max_return 
-    ))
-    conn.commit()
-    conn.close()
-    # st.success("✅ 백테스트 결과가 데이터베이스에 저장되었습니다!")
