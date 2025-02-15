@@ -399,15 +399,12 @@ if st.sidebar.button('🚀 백테스트 실행'):
         mpf.make_addplot(sell_signals, type='scatter', markersize=100, marker='v', color='red')
     ]
     
-    my_style = mpf.make_mpf_style(
-        base_mpf_style='yahoo',
-        rc={'font.family': 'Malgun Gothic', 'axes.unicode_minus': False}
-    )    
+
     
     fig, ax = mpf.plot(
         df_candle,
         type='candle',
-        style=my_style,
+        style='yahoo',
         addplot=apds,
         returnfig=True,
         title=f'{target_ticker} Buy and Sell Signals (Optimized Parameters)',
