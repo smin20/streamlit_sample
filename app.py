@@ -11,6 +11,20 @@ from pykrx import stock
 import sqlite3
 import json
 import logging
+import sys
+
+# 별도의 로거 인스턴스 생성
+logger = logging.getLogger("my_app_logger")
+logger.setLevel(logging.INFO)
+
+# 만약 핸들러가 없으면 추가합니다.
+if not logger.handlers:
+    handler = logging.StreamHandler(sys.stderr)  # stderr로 출력되도록 설정
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
 
 # 로그 설정: 기본 형식을 지정하고, INFO 레벨 이상의 로그를 출력하도록 합니다.
 logging.basicConfig(
@@ -114,8 +128,7 @@ if st.sidebar.button('🚀 백테스트 실행'):
     else:
         log_line += " (종목 미선택)"
     
-    # 로그 출력
-    logging.info(log_line)
+    logger.info(log_line)  # sys.stderr로 출력되어 Streamlit Cloud 로그에 남게 됩니다.
     
     if not target_ticker:
         st.error("❗ 종목을 선택하세요.")
