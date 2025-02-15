@@ -161,11 +161,16 @@ end_date = end_date_input.strftime('%Y%m%d')
 if st.sidebar.button('🚀 백테스트 실행'):
     log_line = f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - 백테스트 실행됨"
     if target_ticker:
-        log_line += f" (종목: {target_ticker} - {stock.get_market_ticker_name(target_ticker)})"
+        # ETF와 주식에 따라 적절한 티커명 함수 사용
+        if instrument_type == "ETF":
+            ticker_name = stock.get_etf_ticker_name(target_ticker)
+        else:
+            ticker_name = stock.get_market_ticker_name(target_ticker)
+        log_line += f" (종목: {target_ticker} - {ticker_name})"
     else:
         log_line += " (종목 미선택)"
     
-    logger.info(log_line)  # sys.stderr로 출력되어 Streamlit Cloud 로그에 남게 됩니다.
+    logger.info(log_line)  # sys.stderr에 기록되어 Streamlit Cloud 로그에 남습니다.
     
     if not target_ticker:
         st.error("❗ 종목/ETF를 선택하세요.")
