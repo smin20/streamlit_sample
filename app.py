@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore", message="findfont: Font family 'Malgun Gothic' not found.")
+
 import streamlit as st
 import datetime 
 import matplotlib.pyplot as plt
