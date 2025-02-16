@@ -11,7 +11,7 @@ COMMISSION_RATE = 0.00015        # 매수/매도 수수료 0.015%
 TRANSACTION_TAX_RATE = 0.0018    # 매도 시 거래세 0.18%
 
 # 백테스트 파라미터 범위
-BUY_NEXT_PERCENT_START = 5.00    # 매수 갭 % 시작 값
+BUY_NEXT_PERCENT_START = 2.00    # 매수 갭 % 시작 값
 BUY_NEXT_PERCENT_END = 10.00     # 매수 갭 % 끝 값
 BUY_NEXT_PERCENT_STEP = 1.0      # 매수 갭 % 증분
 
