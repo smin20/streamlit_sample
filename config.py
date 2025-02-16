@@ -16,7 +16,7 @@ BUY_NEXT_PERCENT_END = 10.00     # 매수 갭 % 끝 값
 BUY_NEXT_PERCENT_STEP = 1.0      # 매수 갭 % 증분
 
 SELL_PERCENT_START = 1.00        # 매도 % 시작 값
-SELL_PERCENT_END = 5.00          # 매도 % 끝 값
+SELL_PERCENT_END = 10.00          # 매도 % 끝 값
 SELL_PERCENT_STEP = 0.5          # 매도 % 증분
 
 # Supabase 설정 (실제 값으로 교체하세요)
